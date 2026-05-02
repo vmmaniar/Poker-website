@@ -247,19 +247,25 @@ function renderLeaderboard() {
     .map(p => ({ ...p, stats: playerStats(p.id) }))
     .sort((a, b) => b.stats.total - a.stats.total);
 
-  const rankLabels = ['🥇','🥈','🥉'];
-
-  el.innerHTML = sorted.map((p, i) => `
+  el.innerHTML = sorted.map((p, i) => {
+    const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : 'other';
+    const trend = p.stats.total >= 0 ? '↗' : '↘';
+    const trendColor = p.stats.total >= 0 ? 'var(--green)' : 'var(--red)';
+    return `
     <div class="lb-row">
-      <span class="lb-rank ${i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : ''}">${rankLabels[i] || (i + 1)}</span>
+      <div class="lb-rank-badge ${rankClass}">${i + 1}</div>
       <div class="player-dot" style="background:${p.color}">${initials(p.name)}</div>
-      <div style="flex:1">
+      <div class="lb-info">
         <div class="lb-name player-link" data-id="${p.id}">${p.name}</div>
         <div class="lb-sessions">${p.stats.sessions} sessions · ${p.stats.winRate}% win rate</div>
       </div>
-      <span class="lb-amount ${colorClass(p.stats.total)}">${fmt(p.stats.total)}</span>
+      <div class="lb-right">
+        <span class="lb-amount ${colorClass(p.stats.total)}">${fmt(p.stats.total)}</span>
+        <span class="lb-trend" style="color:${trendColor}">${trend}</span>
+      </div>
     </div>
-  `).join('');
+    `;
+  }).join('');
 
   el.querySelectorAll('.player-link').forEach(link => {
     link.addEventListener('click', () => showProfile(link.dataset.id));
@@ -307,14 +313,14 @@ function renderPnlChart() {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: {
-          labels: { color: '#8892a4', font: { size: 11 }, boxWidth: 12 }
+          labels: { color: 'rgba(249,250,251,0.45)', font: { size: 11 }, boxWidth: 12 }
         },
         tooltip: {
-          backgroundColor: '#1a1e2a',
-          borderColor: '#252a38',
+          backgroundColor: '#242424',
+          borderColor: 'rgba(255,255,255,0.1)',
           borderWidth: 1,
-          titleColor: '#e2e8f0',
-          bodyColor: '#8892a4',
+          titleColor: '#F9FAFB',
+          bodyColor: 'rgba(249,250,251,0.6)',
           callbacks: {
             label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}`
           }
@@ -322,12 +328,12 @@ function renderPnlChart() {
       },
       scales: {
         x: {
-          ticks: { color: '#4b566b', font: { size: 10 }, maxTicksLimit: 8 },
-          grid: { color: '#1a1e2a' }
+          ticks: { color: 'rgba(249,250,251,0.25)', font: { size: 10 }, maxTicksLimit: 8 },
+          grid: { color: 'rgba(255,255,255,0.04)' }
         },
         y: {
-          ticks: { color: '#4b566b', font: { size: 10 }, callback: v => '$' + v },
-          grid: { color: '#1a1e2a' }
+          ticks: { color: 'rgba(249,250,251,0.25)', font: { size: 10 }, callback: v => '$' + v },
+          grid: { color: 'rgba(255,255,255,0.04)' }
         }
       }
     }
@@ -378,21 +384,21 @@ function renderMonthlyChart() {
       responsive: true,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { labels: { color: '#8892a4', font: { size: 11 }, boxWidth: 12 } },
+        legend: { labels: { color: 'rgba(249,250,251,0.45)', font: { size: 11 }, boxWidth: 12 } },
         tooltip: {
-          backgroundColor: '#1a1e2a',
-          borderColor: '#252a38',
+          backgroundColor: '#242424',
+          borderColor: 'rgba(255,255,255,0.1)',
           borderWidth: 1,
-          titleColor: '#e2e8f0',
-          bodyColor: '#8892a4',
+          titleColor: '#F9FAFB',
+          bodyColor: 'rgba(249,250,251,0.6)',
           callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` }
         }
       },
       scales: {
-        x: { ticks: { color: '#4b566b', font: { size: 10 } }, grid: { color: '#1a1e2a' } },
+        x: { ticks: { color: 'rgba(249,250,251,0.25)', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
         y: {
-          ticks: { color: '#4b566b', font: { size: 10 }, callback: v => '$' + v },
-          grid: { color: '#1a1e2a' }
+          ticks: { color: 'rgba(249,250,251,0.25)', font: { size: 10 }, callback: v => '$' + v },
+          grid: { color: 'rgba(255,255,255,0.04)' }
         }
       }
     }
@@ -447,22 +453,22 @@ function renderWinRateChart() {
       responsive: true,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { labels: { color: '#8892a4', font: { size: 11 }, boxWidth: 12 } },
+        legend: { labels: { color: 'rgba(249,250,251,0.45)', font: { size: 11 }, boxWidth: 12 } },
         tooltip: {
-          backgroundColor: '#1a1e2a',
-          borderColor: '#252a38',
+          backgroundColor: '#242424',
+          borderColor: 'rgba(255,255,255,0.1)',
           borderWidth: 1,
-          titleColor: '#e2e8f0',
-          bodyColor: '#8892a4',
+          titleColor: '#F9FAFB',
+          bodyColor: 'rgba(249,250,251,0.6)',
           callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}%` }
         }
       },
       scales: {
-        x: { ticks: { color: '#4b566b', font: { size: 10 } }, grid: { color: '#1a1e2a' } },
+        x: { ticks: { color: 'rgba(249,250,251,0.25)', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
         y: {
           min: 0, max: 100,
-          ticks: { color: '#4b566b', font: { size: 10 }, callback: v => v + '%' },
-          grid: { color: '#1a1e2a' }
+          ticks: { color: 'rgba(249,250,251,0.25)', font: { size: 10 }, callback: v => v + '%' },
+          grid: { color: 'rgba(255,255,255,0.04)' }
         }
       }
     }
@@ -691,17 +697,17 @@ function showProfile(playerId) {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#1a1e2a',
-            borderColor: '#252a38',
+            backgroundColor: '#242424',
+            borderColor: 'rgba(255,255,255,0.1)',
             borderWidth: 1,
-            titleColor: '#e2e8f0',
-            bodyColor: '#8892a4',
+            titleColor: '#F9FAFB',
+            bodyColor: 'rgba(249,250,251,0.6)',
             callbacks: { label: ctx => ` P&L: ${fmt(ctx.parsed.y)}` }
           }
         },
         scales: {
-          x: { ticks: { color: '#4b566b', font: { size: 9 }, maxTicksLimit: 6 }, grid: { color: '#1a1e2a' } },
-          y: { ticks: { color: '#4b566b', font: { size: 9 }, callback: v => '$' + v }, grid: { color: '#1a1e2a' } }
+          x: { ticks: { color: 'rgba(249,250,251,0.25)', font: { size: 9 }, maxTicksLimit: 6 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+          y: { ticks: { color: 'rgba(249,250,251,0.25)', font: { size: 9 }, callback: v => '$' + v }, grid: { color: 'rgba(255,255,255,0.04)' } }
         }
       }
     });

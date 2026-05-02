@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Poker Night Tracker</title>
+  <title>High Roller Club</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-  <!-- Decorative floating suits -->
+  <!-- Subtle background spades -->
   <div class="bg-suits" aria-hidden="true">
-    <span>♠</span><span>♥</span><span>♣</span><span>♦</span>
-    <span>♠</span><span>♥</span><span>♣</span><span>♦</span>
-    <span>♠</span><span>♥</span><span>♣</span><span>♦</span>
+    <span>♠</span><span>♠</span><span>♠</span>
+    <span>♠</span><span>♠</span><span>♠</span>
+    <span>♠</span><span>♠</span><span>♠</span>
   </div>
 
   <button id="menuToggle" class="menu-toggle">☰</button>
@@ -27,30 +27,25 @@
     <nav class="sidebar">
       <div class="sidebar-header">
         <div class="logo">
-          <div class="logo-suits-left">
-            <span class="s-black">♠</span><span class="s-red">♥</span>
-          </div>
+          <span class="logo-spade">♠</span>
           <div class="logo-text-wrap">
-            <span class="logo-text">Poker Night</span>
-            <span class="logo-tagline">Tracker</span>
-          </div>
-          <div class="logo-suits-right">
-            <span class="s-red">♦</span><span class="s-black">♣</span>
+            <span class="logo-name">High Roller</span>
+            <span class="logo-club">CLUB</span>
           </div>
         </div>
       </div>
       <ul class="nav-links">
         <li><a href="#" class="nav-link active" data-page="dashboard">
-          <span class="nav-icon">♠</span> Dashboard
+          <span class="nav-icon">⬡</span> Dashboard
         </a></li>
         <li><a href="#" class="nav-link" data-page="session">
-          <span class="nav-icon">♥</span> Log Session
+          <span class="nav-icon">＋</span> Log Session
         </a></li>
         <li><a href="#" class="nav-link" data-page="players">
-          <span class="nav-icon">♦</span> Players
+          <span class="nav-icon">◎</span> Players
         </a></li>
         <li><a href="#" class="nav-link" data-page="history">
-          <span class="nav-icon">♣</span> History
+          <span class="nav-icon">≡</span> History
         </a></li>
       </ul>
       <div class="sidebar-footer">
@@ -64,8 +59,11 @@
       <!-- Dashboard Page -->
       <div id="page-dashboard" class="page active">
         <div class="page-header">
-          <h1>Dashboard</h1>
-          <button class="btn btn-primary" id="quickLogBtn">+ Quick Log Session</button>
+          <div>
+            <p class="page-eyebrow">♠ HIGH ROLLER CLUB</p>
+            <h1>Dashboard</h1>
+          </div>
+          <button class="btn btn-primary" id="quickLogBtn">+ Log Session</button>
         </div>
 
         <div class="stat-grid" id="statGrid"></div>
@@ -73,7 +71,7 @@
         <div class="two-col">
           <div class="card">
             <div class="card-header">
-              <h2>Leaderboard</h2>
+              <h2>All-Time Leaderboard</h2>
               <span class="badge">All Time</span>
             </div>
             <div id="leaderboard"></div>
@@ -128,7 +126,10 @@
       <!-- Log Session Page -->
       <div id="page-session" class="page">
         <div class="page-header">
-          <h1>Log Session</h1>
+          <div>
+            <p class="page-eyebrow">♠ HIGH ROLLER CLUB</p>
+            <h1>Log Session</h1>
+          </div>
         </div>
         <div class="card form-card">
           <div class="form-group">
@@ -151,11 +152,14 @@
       <!-- Players Page -->
       <div id="page-players" class="page">
         <div class="page-header">
-          <h1>Players</h1>
+          <div>
+            <p class="page-eyebrow">♠ HIGH ROLLER CLUB</p>
+            <h1>Players</h1>
+          </div>
         </div>
         <div class="two-col">
           <div class="card form-card">
-            <h2>Add Player</h2>
+            <h2 style="margin-bottom:1.25rem">Add Player</h2>
             <div class="form-group">
               <label>Name</label>
               <input type="text" id="playerName" class="input" placeholder="Enter name" />
@@ -167,7 +171,7 @@
             <button class="btn btn-primary" id="addPlayerBtn">Add Player</button>
           </div>
           <div class="card">
-            <h2>All Players</h2>
+            <h2 style="margin-bottom:1.25rem">All Players</h2>
             <div id="playersList"></div>
           </div>
         </div>
@@ -176,7 +180,10 @@
       <!-- History Page -->
       <div id="page-history" class="page">
         <div class="page-header">
-          <h1>Session History</h1>
+          <div>
+            <p class="page-eyebrow">♠ HIGH ROLLER CLUB</p>
+            <h1>Session History</h1>
+          </div>
           <button class="btn btn-secondary" id="exportBtn">↓ Export CSV</button>
         </div>
         <div class="card">
