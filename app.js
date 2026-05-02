@@ -7,6 +7,9 @@ const COLORS = [
 let state = load();
 let selectedColor = COLORS[0];
 let pnlChart = null;
+let monthlyChart = null;
+let winRateChart = null;
+let profileChart = null;
 
 function load() {
   try {
@@ -28,6 +31,8 @@ document.querySelectorAll('.nav-link').forEach(link => {
     link.classList.add('active');
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + page).classList.add('active');
+    document.querySelector('.sidebar').classList.remove('open');
+    document.querySelector('.sidebar-overlay').classList.remove('active');
     renderPage(page);
   });
 });
@@ -71,10 +76,11 @@ function playerById(id) {
 }
 
 function playerStats(playerId) {
-  const sessions = state.sessions.filter(s =>
-    s.results.some(r => r.playerId === playerId)
-  );
+  const sessions = state.sessions
+    .filter(s => s.results.some(r => r.playerId === playerId))
+    .sort((a, b) => a.date.localeCompare(b.date));
   let total = 0, wins = 0, losses = 0, best = -Infinity, worst = Infinity;
+  let tempStreak = 0, tempSign = null, bestWinStreak = 0;
   sessions.forEach(s => {
     const r = s.results.find(r => r.playerId === playerId);
     if (!r) return;
@@ -83,16 +89,20 @@ function playerStats(playerId) {
     else if (r.amount < 0) losses++;
     if (r.amount > best) best = r.amount;
     if (r.amount < worst) worst = r.amount;
+    const sign = r.amount > 0 ? 'W' : r.amount < 0 ? 'L' : 'E';
+    if (sign === tempSign) tempStreak++;
+    else { tempStreak = 1; tempSign = sign; }
+    if (sign === 'W' && tempStreak > bestWinStreak) bestWinStreak = tempStreak;
   });
   return {
-    total,
-    sessions: sessions.length,
-    wins,
-    losses,
+    total, sessions: sessions.length, wins, losses,
     winRate: sessions.length ? Math.round((wins / sessions.length) * 100) : 0,
     best: best === -Infinity ? 0 : best,
     worst: worst === Infinity ? 0 : worst,
-    avg: sessions.length ? total / sessions.length : 0
+    avg: sessions.length ? total / sessions.length : 0,
+    currentStreak: tempStreak,
+    currentStreakSign: tempSign,
+    bestWinStreak
   };
 }
 
@@ -143,11 +153,25 @@ function renderSidebarStats() {
   `;
 }
 
+// ─── Mobile Menu ──────────────────────────────────────────────────────────────
+document.getElementById('menuToggle').addEventListener('click', () => {
+  document.querySelector('.sidebar').classList.toggle('open');
+  document.querySelector('.sidebar-overlay').classList.toggle('active');
+});
+
+document.querySelector('.sidebar-overlay').addEventListener('click', () => {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.querySelector('.sidebar-overlay').classList.remove('active');
+});
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 function renderDashboard() {
   renderStatCards();
   renderLeaderboard();
   renderPnlChart();
+  renderMonthlyChart();
+  renderWinRateChart();
+  renderH2H();
   renderPlayerInsights();
   renderRecentSessions();
 }
@@ -163,7 +187,6 @@ function renderStatCards() {
   const allAmounts = state.sessions.flatMap(s => s.results.map(r => r.amount));
   const totalPot = allAmounts.filter(a => a > 0).reduce((s, a) => s + a, 0);
 
-  // biggest single win
   let bigWin = { amount: -Infinity, player: null };
   let bigLoss = { amount: Infinity, player: null };
   state.sessions.forEach(s => {
@@ -176,7 +199,6 @@ function renderStatCards() {
   const bigWinP = playerById(bigWin.player);
   const bigLossP = playerById(bigLoss.player);
 
-  // leading player
   const sorted = [...state.players].sort((a, b) =>
     playerStats(b.id).total - playerStats(a.id).total
   );
@@ -232,12 +254,16 @@ function renderLeaderboard() {
       <span class="lb-rank ${i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : ''}">${rankLabels[i] || (i + 1)}</span>
       <div class="player-dot" style="background:${p.color}">${initials(p.name)}</div>
       <div style="flex:1">
-        <div class="lb-name">${p.name}</div>
+        <div class="lb-name player-link" data-id="${p.id}">${p.name}</div>
         <div class="lb-sessions">${p.stats.sessions} sessions · ${p.stats.winRate}% win rate</div>
       </div>
       <span class="lb-amount ${colorClass(p.stats.total)}">${fmt(p.stats.total)}</span>
     </div>
   `).join('');
+
+  el.querySelectorAll('.player-link').forEach(link => {
+    link.addEventListener('click', () => showProfile(link.dataset.id));
+  });
 }
 
 function renderPnlChart() {
@@ -300,16 +326,191 @@ function renderPnlChart() {
           grid: { color: '#1a1e2a' }
         },
         y: {
-          ticks: {
-            color: '#4b566b',
-            font: { size: 10 },
-            callback: v => '$' + v
-          },
+          ticks: { color: '#4b566b', font: { size: 10 }, callback: v => '$' + v },
           grid: { color: '#1a1e2a' }
         }
       }
     }
   });
+}
+
+function renderMonthlyChart() {
+  const canvas = document.getElementById('monthlyChart');
+  if (!state.sessions.length || !state.players.length) {
+    canvas.style.display = 'none';
+    return;
+  }
+  canvas.style.display = '';
+
+  const months = [...new Set(state.sessions.map(s => s.date.slice(0, 7)))].sort();
+
+  const datasets = state.players.map(p => {
+    const data = months.map(m =>
+      state.sessions
+        .filter(s => s.date.startsWith(m))
+        .reduce((sum, s) => {
+          const r = s.results.find(r => r.playerId === p.id);
+          return sum + (r ? r.amount : 0);
+        }, 0)
+    );
+    return {
+      label: p.name,
+      data,
+      backgroundColor: p.color + 'cc',
+      borderColor: p.color,
+      borderWidth: 1,
+      borderRadius: 4,
+    };
+  });
+
+  if (monthlyChart) monthlyChart.destroy();
+
+  monthlyChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: months.map(m => {
+        const [y, mo] = m.split('-');
+        return new Date(+y, +mo - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+      }),
+      datasets
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#8892a4', font: { size: 11 }, boxWidth: 12 } },
+        tooltip: {
+          backgroundColor: '#1a1e2a',
+          borderColor: '#252a38',
+          borderWidth: 1,
+          titleColor: '#e2e8f0',
+          bodyColor: '#8892a4',
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#4b566b', font: { size: 10 } }, grid: { color: '#1a1e2a' } },
+        y: {
+          ticks: { color: '#4b566b', font: { size: 10 }, callback: v => '$' + v },
+          grid: { color: '#1a1e2a' }
+        }
+      }
+    }
+  });
+}
+
+function renderWinRateChart() {
+  const canvas = document.getElementById('winRateChart');
+  if (!state.sessions.length || !state.players.length) {
+    canvas.style.display = 'none';
+    return;
+  }
+  canvas.style.display = '';
+
+  const sorted = [...state.sessions].sort((a, b) => a.date.localeCompare(b.date));
+
+  const datasets = state.players
+    .filter(p => state.sessions.some(s => s.results.some(r => r.playerId === p.id)))
+    .map(p => {
+      const results = sorted
+        .filter(s => s.results.some(r => r.playerId === p.id))
+        .map(s => s.results.find(r => r.playerId === p.id).amount);
+
+      const data = results.map((_, i) => {
+        const window = results.slice(Math.max(0, i - 4), i + 1);
+        const wins = window.filter(a => a > 0).length;
+        return Math.round((wins / window.length) * 100);
+      });
+
+      return {
+        label: p.name,
+        data,
+        borderColor: p.color,
+        backgroundColor: p.color + '18',
+        tension: 0.35,
+        fill: false,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        borderWidth: 2,
+      };
+    });
+
+  const maxLen = Math.max(...datasets.map(d => d.data.length), 1);
+  const labels = Array.from({ length: maxLen }, (_, i) => `#${i + 1}`);
+
+  if (winRateChart) winRateChart.destroy();
+
+  winRateChart = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#8892a4', font: { size: 11 }, boxWidth: 12 } },
+        tooltip: {
+          backgroundColor: '#1a1e2a',
+          borderColor: '#252a38',
+          borderWidth: 1,
+          titleColor: '#e2e8f0',
+          bodyColor: '#8892a4',
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}%` }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#4b566b', font: { size: 10 } }, grid: { color: '#1a1e2a' } },
+        y: {
+          min: 0, max: 100,
+          ticks: { color: '#4b566b', font: { size: 10 }, callback: v => v + '%' },
+          grid: { color: '#1a1e2a' }
+        }
+      }
+    }
+  });
+}
+
+function renderH2H() {
+  const el = document.getElementById('h2hTable');
+  const players = state.players;
+  if (players.length < 2) {
+    el.innerHTML = '<div class="empty-state"><p>Need at least 2 players to show head-to-head stats.</p></div>';
+    return;
+  }
+
+  let html = '<table class="h2h-table"><thead><tr><th></th>';
+  players.forEach(p => {
+    html += `<th><div class="player-dot" style="background:${p.color};width:24px;height:24px;font-size:0.65rem;margin:0 auto">${initials(p.name)}</div><div class="h2h-col-label">${p.name.split(' ')[0]}</div></th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  players.forEach(a => {
+    html += `<tr><td class="h2h-row-label"><div class="player-dot" style="background:${a.color};width:24px;height:24px;font-size:0.65rem">${initials(a.name)}</div><span>${a.name.split(' ')[0]}</span></td>`;
+    players.forEach(b => {
+      if (a.id === b.id) {
+        html += `<td class="h2h-cell h2h-self">—</td>`;
+      } else {
+        const shared = state.sessions.filter(s =>
+          s.results.some(r => r.playerId === a.id) &&
+          s.results.some(r => r.playerId === b.id)
+        );
+        if (!shared.length) {
+          html += `<td class="h2h-cell h2h-no-data">—</td>`;
+        } else {
+          const wins = shared.filter(s => {
+            const r = s.results.find(r => r.playerId === a.id);
+            return r && r.amount > 0;
+          }).length;
+          const pct = Math.round((wins / shared.length) * 100);
+          const cls = pct > 50 ? 'h2h-win' : pct < 50 ? 'h2h-lose' : 'h2h-even';
+          html += `<td class="h2h-cell ${cls}"><div class="h2h-pct">${pct}%</div><div class="h2h-games">${shared.length}g</div></td>`;
+        }
+      }
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  el.innerHTML = html;
 }
 
 function renderPlayerInsights() {
@@ -321,11 +522,13 @@ function renderPlayerInsights() {
 
   el.innerHTML = state.players.map(p => {
     const s = playerStats(p.id);
+    const streakColor = s.currentStreakSign === 'W' ? 'var(--green)' : s.currentStreakSign === 'L' ? 'var(--red)' : 'var(--text-muted)';
+    const streakLabel = s.currentStreak && s.currentStreakSign ? `${s.currentStreak}${s.currentStreakSign}` : '—';
     return `
       <div class="insight-card" style="border-left-color:${p.color}">
         <div class="insight-name">
           <div class="player-dot" style="background:${p.color};width:24px;height:24px;font-size:0.7rem">${initials(p.name)}</div>
-          ${p.name}
+          <span class="player-link" data-id="${p.id}">${p.name}</span>
         </div>
         <div class="insight-stats">
           <div class="insight-stat">
@@ -352,10 +555,22 @@ function renderPlayerInsights() {
             <span class="insight-stat-label">Sessions</span>
             <span class="insight-stat-value">${s.sessions}</span>
           </div>
+          <div class="insight-stat">
+            <span class="insight-stat-label">Current Streak</span>
+            <span class="insight-stat-value" style="color:${streakColor}">${streakLabel}</span>
+          </div>
+          <div class="insight-stat">
+            <span class="insight-stat-label">Best Win Streak</span>
+            <span class="insight-stat-value positive">${s.bestWinStreak ? s.bestWinStreak + 'W' : '—'}</span>
+          </div>
         </div>
       </div>
     `;
   }).join('');
+
+  el.querySelectorAll('.player-link').forEach(link => {
+    link.addEventListener('click', () => showProfile(link.dataset.id));
+  });
 }
 
 function renderRecentSessions() {
@@ -400,6 +615,113 @@ function renderRecentSessions() {
     });
   });
 }
+
+// ─── Player Profile Modal ─────────────────────────────────────────────────────
+function showProfile(playerId) {
+  const player = playerById(playerId);
+  if (!player) return;
+  const s = playerStats(playerId);
+  const sessions = state.sessions
+    .filter(sess => sess.results.some(r => r.playerId === playerId))
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  const streakColor = s.currentStreakSign === 'W' ? 'var(--green)' : s.currentStreakSign === 'L' ? 'var(--red)' : 'var(--text-muted)';
+  const streakLabel = s.currentStreak && s.currentStreakSign ? `${s.currentStreak}${s.currentStreakSign}` : '—';
+
+  document.getElementById('profileContent').innerHTML = `
+    <div class="profile-header">
+      <div class="player-dot" style="background:${player.color};width:48px;height:48px;font-size:1.1rem">${initials(player.name)}</div>
+      <div>
+        <div class="profile-name">${player.name}</div>
+        <div class="profile-sub">${s.sessions} session${s.sessions !== 1 ? 's' : ''} played</div>
+      </div>
+    </div>
+    <div class="profile-stats">
+      <div class="insight-stat"><span class="insight-stat-label">Total P&amp;L</span><span class="insight-stat-value ${colorClass(s.total)}">${fmt(s.total)}</span></div>
+      <div class="insight-stat"><span class="insight-stat-label">Win Rate</span><span class="insight-stat-value">${s.winRate}%</span></div>
+      <div class="insight-stat"><span class="insight-stat-label">Best Session</span><span class="insight-stat-value positive">${s.sessions ? fmt(s.best) : '—'}</span></div>
+      <div class="insight-stat"><span class="insight-stat-label">Worst Session</span><span class="insight-stat-value ${s.worst < 0 ? 'negative' : 'neutral'}">${s.sessions ? fmt(s.worst) : '—'}</span></div>
+      <div class="insight-stat"><span class="insight-stat-label">Avg / Session</span><span class="insight-stat-value ${colorClass(s.avg)}">${s.sessions ? fmt(Math.round(s.avg)) : '—'}</span></div>
+      <div class="insight-stat"><span class="insight-stat-label">Wins / Losses</span><span class="insight-stat-value">${s.wins}W · ${s.losses}L</span></div>
+      <div class="insight-stat"><span class="insight-stat-label">Current Streak</span><span class="insight-stat-value" style="color:${streakColor}">${streakLabel}</span></div>
+      <div class="insight-stat"><span class="insight-stat-label">Best Win Streak</span><span class="insight-stat-value positive">${s.bestWinStreak ? s.bestWinStreak + 'W' : '—'}</span></div>
+    </div>
+    ${sessions.length ? `
+    <div class="profile-section-label">Recent Sessions</div>
+    <div class="profile-sessions">
+      ${sessions.slice(0, 8).map(sess => {
+        const r = sess.results.find(r => r.playerId === playerId);
+        return `<div class="profile-session-row">
+          <span class="session-date">${formatDate(sess.date)}</span>
+          ${sess.notes ? `<span class="profile-session-note">${sess.notes}</span>` : '<span style="flex:1"></span>'}
+          <span class="lb-amount ${colorClass(r.amount)}">${fmt(r.amount)}</span>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
+  `;
+
+  const canvas = document.getElementById('profileChart');
+  const sessionsAsc = [...sessions].reverse();
+  let running = 0;
+  const chartData = sessionsAsc.map(sess => {
+    const r = sess.results.find(r => r.playerId === playerId);
+    running += r ? r.amount : 0;
+    return running;
+  });
+
+  if (profileChart) { profileChart.destroy(); profileChart = null; }
+  if (chartData.length > 1) {
+    canvas.style.display = '';
+    profileChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: sessionsAsc.map(s => formatDate(s.date)),
+        datasets: [{
+          data: chartData,
+          borderColor: player.color,
+          backgroundColor: player.color + '20',
+          fill: true,
+          tension: 0.35,
+          pointRadius: 3,
+          borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1a1e2a',
+            borderColor: '#252a38',
+            borderWidth: 1,
+            titleColor: '#e2e8f0',
+            bodyColor: '#8892a4',
+            callbacks: { label: ctx => ` P&L: ${fmt(ctx.parsed.y)}` }
+          }
+        },
+        scales: {
+          x: { ticks: { color: '#4b566b', font: { size: 9 }, maxTicksLimit: 6 }, grid: { color: '#1a1e2a' } },
+          y: { ticks: { color: '#4b566b', font: { size: 9 }, callback: v => '$' + v }, grid: { color: '#1a1e2a' } }
+        }
+      }
+    });
+  } else {
+    canvas.style.display = 'none';
+  }
+
+  document.getElementById('profileModal').classList.remove('hidden');
+}
+
+function closeProfile() {
+  document.getElementById('profileModal').classList.add('hidden');
+  if (profileChart) { profileChart.destroy(); profileChart = null; }
+}
+
+document.getElementById('profileClose').addEventListener('click', closeProfile);
+
+document.getElementById('profileModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('profileModal')) closeProfile();
+});
 
 // ─── Session Form ─────────────────────────────────────────────────────────────
 function renderSessionForm() {
@@ -524,13 +846,17 @@ function renderPlayersList() {
       <div class="player-item">
         <div class="player-dot" style="background:${p.color}">${initials(p.name)}</div>
         <div class="player-item-info">
-          <div class="player-item-name">${p.name}</div>
+          <div class="player-item-name player-link" data-id="${p.id}">${p.name}</div>
           <div class="player-item-meta">${s.sessions} sessions · ${fmt(s.total)}</div>
         </div>
         <button class="player-delete" data-id="${p.id}">✕</button>
       </div>
     `;
   }).join('');
+
+  el.querySelectorAll('.player-link').forEach(link => {
+    link.addEventListener('click', () => showProfile(link.dataset.id));
+  });
 
   el.querySelectorAll('.player-delete').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -558,7 +884,6 @@ document.getElementById('addPlayerBtn').addEventListener('click', () => {
   save();
   document.getElementById('playerName').value = '';
 
-  // pick next unused color
   const usedColors = state.players.map(p => p.color);
   const next = COLORS.find(c => !usedColors.includes(c)) || COLORS[0];
   selectedColor = next;
@@ -616,6 +941,29 @@ function renderHistory() {
     });
   });
 }
+
+function exportCSV() {
+  if (!state.sessions.length) { toast('No sessions to export'); return; }
+  const rows = [['Date', 'Notes', 'Player', 'Net P&L']];
+  const sorted = [...state.sessions].sort((a, b) => a.date.localeCompare(b.date));
+  sorted.forEach(s => {
+    s.results.forEach(r => {
+      const p = playerById(r.playerId);
+      rows.push([s.date, s.notes || '', p ? p.name : 'Unknown', r.amount]);
+    });
+  });
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'poker-sessions.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV downloaded!');
+}
+
+document.getElementById('exportBtn').addEventListener('click', exportCSV);
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 renderDashboard();

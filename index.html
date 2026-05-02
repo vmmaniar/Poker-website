@@ -4,31 +4,53 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Poker Night Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+
+  <!-- Decorative floating suits -->
+  <div class="bg-suits" aria-hidden="true">
+    <span>♠</span><span>♥</span><span>♣</span><span>♦</span>
+    <span>♠</span><span>♥</span><span>♣</span><span>♦</span>
+    <span>♠</span><span>♥</span><span>♣</span><span>♦</span>
+  </div>
+
+  <button id="menuToggle" class="menu-toggle">☰</button>
+  <div class="sidebar-overlay"></div>
+
   <div id="app">
     <!-- Sidebar -->
     <nav class="sidebar">
       <div class="sidebar-header">
         <div class="logo">
-          <span class="logo-icon">♠</span>
-          <span class="logo-text">Poker Night</span>
+          <div class="logo-suits-left">
+            <span class="s-black">♠</span><span class="s-red">♥</span>
+          </div>
+          <div class="logo-text-wrap">
+            <span class="logo-text">Poker Night</span>
+            <span class="logo-tagline">Tracker</span>
+          </div>
+          <div class="logo-suits-right">
+            <span class="s-red">♦</span><span class="s-black">♣</span>
+          </div>
         </div>
       </div>
       <ul class="nav-links">
         <li><a href="#" class="nav-link active" data-page="dashboard">
-          <span class="nav-icon">◈</span> Dashboard
+          <span class="nav-icon">♠</span> Dashboard
         </a></li>
         <li><a href="#" class="nav-link" data-page="session">
-          <span class="nav-icon">✦</span> Log Session
+          <span class="nav-icon">♥</span> Log Session
         </a></li>
         <li><a href="#" class="nav-link" data-page="players">
-          <span class="nav-icon">♟</span> Players
+          <span class="nav-icon">♦</span> Players
         </a></li>
         <li><a href="#" class="nav-link" data-page="history">
-          <span class="nav-icon">◉</span> History
+          <span class="nav-icon">♣</span> History
         </a></li>
       </ul>
       <div class="sidebar-footer">
@@ -46,10 +68,8 @@
           <button class="btn btn-primary" id="quickLogBtn">+ Quick Log Session</button>
         </div>
 
-        <!-- Stat Cards -->
         <div class="stat-grid" id="statGrid"></div>
 
-        <!-- Leaderboard + Chart -->
         <div class="two-col">
           <div class="card">
             <div class="card-header">
@@ -66,7 +86,30 @@
           </div>
         </div>
 
-        <!-- Player Cards -->
+        <div class="two-col" style="margin-top:1.25rem">
+          <div class="card">
+            <div class="card-header">
+              <h2>Monthly P&amp;L</h2>
+            </div>
+            <canvas id="monthlyChart" height="260"></canvas>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h2>Win Rate Trend</h2>
+              <span class="badge">5-session rolling</span>
+            </div>
+            <canvas id="winRateChart" height="260"></canvas>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1.25rem">
+          <div class="card-header">
+            <h2>Head-to-Head</h2>
+            <span class="badge">Win % when both play</span>
+          </div>
+          <div id="h2hTable" style="overflow-x:auto"></div>
+        </div>
+
         <div class="card" style="margin-top:1.5rem">
           <div class="card-header">
             <h2>Player Insights</h2>
@@ -74,7 +117,6 @@
           <div id="playerInsights" class="insights-grid"></div>
         </div>
 
-        <!-- Recent Sessions -->
         <div class="card" style="margin-top:1.5rem">
           <div class="card-header">
             <h2>Recent Sessions</h2>
@@ -135,6 +177,7 @@
       <div id="page-history" class="page">
         <div class="page-header">
           <h1>Session History</h1>
+          <button class="btn btn-secondary" id="exportBtn">↓ Export CSV</button>
         </div>
         <div class="card">
           <div id="historyList"></div>
@@ -155,6 +198,17 @@
       <div class="modal-actions">
         <button class="btn btn-secondary" id="modalCancel">Cancel</button>
         <button class="btn btn-danger" id="modalConfirm">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Player Profile Modal -->
+  <div id="profileModal" class="modal-overlay hidden">
+    <div class="modal modal-wide">
+      <div id="profileContent"></div>
+      <canvas id="profileChart" height="140" style="margin-top:1rem"></canvas>
+      <div class="modal-actions" style="margin-top:1rem">
+        <button class="btn btn-secondary" id="profileClose">Close</button>
       </div>
     </div>
   </div>
