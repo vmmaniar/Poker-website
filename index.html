@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Poker Night Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">♠</span>
+          <span class="logo-text">Poker Night</span>
+        </div>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#" class="nav-link active" data-page="dashboard">
+          <span class="nav-icon">◈</span> Dashboard
+        </a></li>
+        <li><a href="#" class="nav-link" data-page="session">
+          <span class="nav-icon">✦</span> Log Session
+        </a></li>
+        <li><a href="#" class="nav-link" data-page="players">
+          <span class="nav-icon">♟</span> Players
+        </a></li>
+        <li><a href="#" class="nav-link" data-page="history">
+          <span class="nav-icon">◉</span> History
+        </a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="session-count" id="sidebarStats"></div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <!-- Dashboard Page -->
+      <div id="page-dashboard" class="page active">
+        <div class="page-header">
+          <h1>Dashboard</h1>
+          <button class="btn btn-primary" id="quickLogBtn">+ Quick Log Session</button>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="stat-grid" id="statGrid"></div>
+
+        <!-- Leaderboard + Chart -->
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header">
+              <h2>Leaderboard</h2>
+              <span class="badge">All Time</span>
+            </div>
+            <div id="leaderboard"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h2>P&amp;L Over Time</h2>
+            </div>
+            <canvas id="pnlChart" height="260"></canvas>
+          </div>
+        </div>
+
+        <!-- Player Cards -->
+        <div class="card" style="margin-top:1.5rem">
+          <div class="card-header">
+            <h2>Player Insights</h2>
+          </div>
+          <div id="playerInsights" class="insights-grid"></div>
+        </div>
+
+        <!-- Recent Sessions -->
+        <div class="card" style="margin-top:1.5rem">
+          <div class="card-header">
+            <h2>Recent Sessions</h2>
+          </div>
+          <div id="recentSessions"></div>
+        </div>
+      </div>
+
+      <!-- Log Session Page -->
+      <div id="page-session" class="page">
+        <div class="page-header">
+          <h1>Log Session</h1>
+        </div>
+        <div class="card form-card">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="sessionDate" class="input" />
+          </div>
+          <div class="form-group">
+            <label>Notes (optional)</label>
+            <input type="text" id="sessionNotes" class="input" placeholder="e.g. Arvansh's place, wild night..." />
+          </div>
+          <div class="form-group">
+            <label>Results <span class="hint">(positive = win, negative = loss)</span></label>
+            <div id="sessionResults" class="results-list"></div>
+          </div>
+          <div class="balance-row" id="balanceRow"></div>
+          <button class="btn btn-primary btn-full" id="saveSessionBtn">Save Session</button>
+        </div>
+      </div>
+
+      <!-- Players Page -->
+      <div id="page-players" class="page">
+        <div class="page-header">
+          <h1>Players</h1>
+        </div>
+        <div class="two-col">
+          <div class="card form-card">
+            <h2>Add Player</h2>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" id="playerName" class="input" placeholder="Enter name" />
+            </div>
+            <div class="form-group">
+              <label>Color</label>
+              <div class="color-picker" id="colorPicker"></div>
+            </div>
+            <button class="btn btn-primary" id="addPlayerBtn">Add Player</button>
+          </div>
+          <div class="card">
+            <h2>All Players</h2>
+            <div id="playersList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History Page -->
+      <div id="page-history" class="page">
+        <div class="page-header">
+          <h1>Session History</h1>
+        </div>
+        <div class="card">
+          <div id="historyList"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Confirm Modal -->
+  <div id="modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3 id="modalTitle"></h3>
+      <p id="modalBody"></p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="modalCancel">Cancel</button>
+        <button class="btn btn-danger" id="modalConfirm">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
