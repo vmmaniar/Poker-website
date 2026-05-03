@@ -3,7 +3,7 @@
 // Get these from: https://app.supabase.com -> Settings -> API
 
 const SUPABASE_URL = 'https://gmrpnqexjdqcgdszzqwj.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_SrVQCMXgcEeSBVfij6SCCA_s-oZ_exy';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtcnBucWV4amRxY2dkc3p6cXdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3OTcxMjksImV4cCI6MjA5MzM3MzEyOX0.H6sIgGpFOLLEgaGrLwGm04YA7Shsh9P_w1pwbOHDwZE';
 
 let supabase = null;
 let currentUser = null;
