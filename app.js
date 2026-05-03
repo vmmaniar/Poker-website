@@ -10,12 +10,15 @@ let pnlChart = null;
 let monthlyChart = null;
 let winRateChart = null;
 let profileChart = null;
+let activeTimer = null;
 
 function load() {
   try {
     const raw = localStorage.getItem('pokerNight');
-    return raw ? JSON.parse(raw) : { players: [], sessions: [] };
-  } catch { return { players: [], sessions: [] }; }
+    const data = raw ? JSON.parse(raw) : { players: [], sessions: [], activeSession: null };
+    if (!('activeSession' in data)) data.activeSession = null;
+    return data;
+  } catch { return { players: [], sessions: [], activeSession: null }; }
 }
 
 function save() {
@@ -33,6 +36,7 @@ document.querySelectorAll('.nav-link').forEach(link => {
     document.getElementById('page-' + page).classList.add('active');
     document.querySelector('.sidebar').classList.remove('open');
     document.querySelector('.sidebar-overlay').classList.remove('active');
+    if (activeTimer) { clearInterval(activeTimer); activeTimer = null; }
     renderPage(page);
   });
 });
@@ -164,8 +168,276 @@ document.querySelector('.sidebar-overlay').addEventListener('click', () => {
   document.querySelector('.sidebar-overlay').classList.remove('active');
 });
 
+// ─── Active Session ───────────────────────────────────────────────────────────
+function getElapsedTime(startTime) {
+  const elapsed = Math.floor((Date.now() - startTime) / 1000);
+  const h = Math.floor(elapsed / 3600);
+  const m = Math.floor((elapsed % 3600) / 60);
+  const s = elapsed % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function getTotalBuyin(playerId) {
+  if (!state.activeSession) return 0;
+  const initial = (state.activeSession.buyins || {})[playerId] || 0;
+  const rebuyTotal = (state.activeSession.rebuys || [])
+    .filter(r => r.playerId === playerId)
+    .reduce((s, r) => s + r.amount, 0);
+  return initial + rebuyTotal;
+}
+
+function renderActiveBanner() {
+  const banner = document.getElementById('liveSessionBanner');
+  const startLiveBtn = document.getElementById('startLiveBtn');
+  if (!banner) return;
+
+  if (!state.activeSession) {
+    banner.classList.add('hidden');
+    if (startLiveBtn) startLiveBtn.style.display = '';
+    if (activeTimer) { clearInterval(activeTimer); activeTimer = null; }
+    return;
+  }
+
+  banner.classList.remove('hidden');
+  if (startLiveBtn) startLiveBtn.style.display = 'none';
+
+  const timerEl = document.getElementById('liveTimer');
+  const notesEl = document.getElementById('liveSessNotes');
+  const countEl = document.getElementById('liveRebuyCount');
+
+  if (notesEl) notesEl.textContent = state.activeSession.notes || '';
+  if (countEl) {
+    const n = (state.activeSession.rebuys || []).length;
+    countEl.textContent = n ? `${n} re-buy${n !== 1 ? 's' : ''}` : '';
+    countEl.style.display = n ? '' : 'none';
+  }
+
+  if (activeTimer) clearInterval(activeTimer);
+  const tick = () => { if (timerEl && state.activeSession) timerEl.textContent = getElapsedTime(state.activeSession.startTime); };
+  tick();
+  activeTimer = setInterval(tick, 1000);
+}
+
+function openStartSessionModal() {
+  if (!state.players.length) { toast('Add players first'); return; }
+  document.getElementById('liveSessionDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('liveSessionNotes').value = '';
+
+  const list = document.getElementById('liveBuyinList');
+  list.innerHTML = state.players.map(p => `
+    <div class="result-row">
+      <span class="result-dot" style="background:${p.color}"></span>
+      <span class="result-name">${p.name}</span>
+      <input type="number" class="result-input live-buyin-input" data-player="${p.id}" placeholder="0" step="0.5" min="0" />
+    </div>
+  `).join('');
+
+  document.getElementById('startSessionModal').classList.remove('hidden');
+}
+
+document.getElementById('startLiveBtn').addEventListener('click', () => {
+  if (state.activeSession) { toast('A session is already active'); return; }
+  openStartSessionModal();
+});
+
+document.getElementById('startSessionCancel').addEventListener('click', () => {
+  document.getElementById('startSessionModal').classList.add('hidden');
+});
+
+document.getElementById('startSessionConfirm').addEventListener('click', () => {
+  const date = document.getElementById('liveSessionDate').value;
+  if (!date) { toast('Please select a date'); return; }
+
+  const notes = document.getElementById('liveSessionNotes').value.trim();
+  const buyins = {};
+  document.querySelectorAll('.live-buyin-input').forEach(inp => {
+    const v = parseFloat(inp.value) || 0;
+    if (v > 0) buyins[inp.dataset.player] = v;
+  });
+
+  state.activeSession = { startTime: Date.now(), date, notes, buyins, rebuys: [] };
+  save();
+  document.getElementById('startSessionModal').classList.add('hidden');
+  renderDashboard();
+  toast('Live session started! ♠');
+});
+
+// ─── Re-buy ───────────────────────────────────────────────────────────────────
+let rebuySelectedPlayerId = null;
+
+function openRebuyModal() {
+  if (!state.activeSession) return;
+  rebuySelectedPlayerId = null;
+
+  const list = document.getElementById('rebuyPlayerList');
+  list.innerHTML = state.players.map(p => {
+    const total = getTotalBuyin(p.id);
+    return `
+      <button class="rebuy-player-btn" data-id="${p.id}">
+        <div class="player-dot" style="background:${p.color};width:44px;height:44px;font-size:1rem">${initials(p.name)}</div>
+        <div class="rebuy-player-info">
+          <div class="rebuy-player-name">${p.name}</div>
+          <div class="rebuy-player-total">In for ${total > 0 ? fmtAbs(total) : '$0'}</div>
+        </div>
+      </button>
+    `;
+  }).join('');
+
+  const amtRow = document.getElementById('rebuyAmountRow');
+  const confirmBtn = document.getElementById('rebuyConfirm');
+  amtRow.classList.add('hidden');
+  confirmBtn.classList.add('hidden');
+  document.getElementById('rebuyAmount').value = '';
+
+  list.querySelectorAll('.rebuy-player-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      rebuySelectedPlayerId = btn.dataset.id;
+      const p = playerById(rebuySelectedPlayerId);
+      list.querySelectorAll('.rebuy-player-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('rebuySelectedPlayer').innerHTML = `
+        <div class="player-dot" style="background:${p.color};width:28px;height:28px;font-size:0.75rem">${initials(p.name)}</div>
+        <span>${p.name}</span>
+      `;
+      amtRow.classList.remove('hidden');
+      confirmBtn.classList.remove('hidden');
+      document.getElementById('rebuyAmount').focus();
+    });
+  });
+
+  document.getElementById('rebuyModal').classList.remove('hidden');
+}
+
+document.getElementById('rebuyBtn').addEventListener('click', openRebuyModal);
+
+document.getElementById('rebuyCancel').addEventListener('click', () => {
+  document.getElementById('rebuyModal').classList.add('hidden');
+});
+
+document.getElementById('rebuyConfirm').addEventListener('click', () => {
+  if (!rebuySelectedPlayerId || !state.activeSession) return;
+  const amount = parseFloat(document.getElementById('rebuyAmount').value) || 0;
+  if (amount <= 0) { toast('Enter a valid amount'); return; }
+
+  state.activeSession.rebuys.push({ playerId: rebuySelectedPlayerId, amount, time: Date.now() });
+  save();
+
+  const p = playerById(rebuySelectedPlayerId);
+  document.getElementById('rebuyModal').classList.add('hidden');
+  renderActiveBanner();
+  toast(`Re-buy added for ${p?.name}: ${fmtAbs(amount)}`);
+});
+
+document.getElementById('rebuyAmount').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('rebuyConfirm').click();
+});
+
+// ─── End Session ──────────────────────────────────────────────────────────────
+function openEndSessionModal() {
+  if (!state.activeSession) return;
+
+  const cashoutList = document.getElementById('cashoutList');
+  cashoutList.innerHTML = state.players.map(p => {
+    const buyin = getTotalBuyin(p.id);
+    return `
+      <div class="result-row">
+        <span class="result-dot" style="background:${p.color}"></span>
+        <div class="cashout-player-info">
+          <span class="result-name">${p.name}</span>
+          <span class="cashout-buyin">Buy-in: ${buyin > 0 ? fmtAbs(buyin) : '$0'}</span>
+        </div>
+        <input type="number" class="result-input cashout-input"
+               data-player="${p.id}" data-buyin="${buyin}"
+               placeholder="Cash out" step="0.5" min="0" />
+      </div>
+    `;
+  }).join('');
+
+  cashoutList.querySelectorAll('.cashout-input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const v = parseFloat(inp.value) || 0;
+      const b = parseFloat(inp.dataset.buyin) || 0;
+      inp.classList.toggle('win', v > b);
+      inp.classList.toggle('loss', v < b && v > 0);
+      updateCashoutBalance();
+    });
+  });
+
+  updateCashoutBalance();
+  document.getElementById('endSessionModal').classList.remove('hidden');
+}
+
+function updateCashoutBalance() {
+  const inputs = document.querySelectorAll('.cashout-input');
+  const totalCashout = [...inputs].reduce((s, el) => s + (parseFloat(el.value) || 0), 0);
+  const totalBuyin = [...inputs].reduce((s, el) => s + (parseFloat(el.dataset.buyin) || 0), 0);
+  const diff = Math.round((totalCashout - totalBuyin) * 100) / 100;
+  const row = document.getElementById('cashoutBalance');
+  if (Math.abs(diff) < 0.01) {
+    row.innerHTML = totalBuyin > 0
+      ? `<span class="balance-ok">✓ Balanced — total pot ${fmtAbs(totalBuyin)}</span>`
+      : `<span class="balance-neutral">Enter cash-out amounts above</span>`;
+  } else if (diff > 0) {
+    row.innerHTML = `<span class="balance-bad">⚠ Cash outs exceed buy-ins by ${fmtAbs(diff)}</span>`;
+  } else {
+    row.innerHTML = `<span class="balance-bad">⚠ Cash outs short by ${fmtAbs(Math.abs(diff))}</span>`;
+  }
+}
+
+document.getElementById('endSessionBtn').addEventListener('click', openEndSessionModal);
+
+document.getElementById('endSessionCancel').addEventListener('click', () => {
+  document.getElementById('endSessionModal').classList.add('hidden');
+});
+
+document.getElementById('endSessionSave').addEventListener('click', () => {
+  if (!state.activeSession) return;
+  const inputs = document.querySelectorAll('.cashout-input');
+
+  const results = [...inputs].map(el => ({
+    playerId: el.dataset.player,
+    amount: Math.round(((parseFloat(el.value) || 0) - (parseFloat(el.dataset.buyin) || 0)) * 100) / 100
+  })).filter(r => r.amount !== 0);
+
+  if (!results.length) { toast('Enter at least one cash-out amount'); return; }
+
+  const total = results.reduce((s, r) => s + r.amount, 0);
+  if (Math.abs(total) > 0.5) {
+    toast(`Results don't balance (off by ${fmt(total)})`);
+    return;
+  }
+
+  const session = {
+    id: Date.now().toString(),
+    date: state.activeSession.date,
+    notes: state.activeSession.notes,
+    results
+  };
+
+  state.sessions.push(session);
+  state.activeSession = null;
+  save();
+
+  if (activeTimer) { clearInterval(activeTimer); activeTimer = null; }
+  document.getElementById('endSessionModal').classList.add('hidden');
+  renderDashboard();
+  renderSidebarStats();
+  toast('Session saved! ♠');
+});
+
+document.getElementById('discardSessionBtn').addEventListener('click', async () => {
+  const ok = await confirm('Discard live session?', 'All buy-in and re-buy data for this session will be lost.');
+  if (!ok) return;
+  state.activeSession = null;
+  save();
+  if (activeTimer) { clearInterval(activeTimer); activeTimer = null; }
+  renderDashboard();
+  toast('Session discarded');
+});
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 function renderDashboard() {
+  renderActiveBanner();
   renderStatCards();
   renderLeaderboard();
   renderPnlChart();
