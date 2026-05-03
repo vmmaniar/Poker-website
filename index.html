@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -19,10 +20,59 @@
     <span>♠</span><span>♠</span><span>♠</span>
   </div>
 
+  <!-- Auth Pages -->
+  <div id="authContainer" class="auth-container">
+    <!-- Login Page -->
+    <div id="loginPage" class="auth-page active">
+      <div class="auth-box">
+        <div class="auth-logo">
+          <span class="auth-logo-spade">♠</span>
+          <div>
+            <div class="auth-logo-name">High Roller</div>
+            <div class="auth-logo-club">CLUB</div>
+          </div>
+        </div>
+        <h1>Welcome Back</h1>
+        <p class="auth-subtitle">Sign in to your account</p>
+        <form id="loginForm" class="auth-form">
+          <input type="email" id="loginEmail" class="auth-input" placeholder="Email" required />
+          <input type="password" id="loginPassword" class="auth-input" placeholder="Password" required />
+          <button type="submit" class="auth-btn">Sign In</button>
+        </form>
+        <p class="auth-toggle">Don't have an account? <a href="#" id="toggleRegister">Sign up</a></p>
+        <div id="loginError" class="auth-error"></div>
+      </div>
+    </div>
+
+    <!-- Register Page -->
+    <div id="registerPage" class="auth-page">
+      <div class="auth-box">
+        <div class="auth-logo">
+          <span class="auth-logo-spade">♠</span>
+          <div>
+            <div class="auth-logo-name">High Roller</div>
+            <div class="auth-logo-club">CLUB</div>
+          </div>
+        </div>
+        <h1>Join the Club</h1>
+        <p class="auth-subtitle">Create your player account</p>
+        <form id="registerForm" class="auth-form">
+          <input type="text" id="registerName" class="auth-input" placeholder="Player Name" required />
+          <input type="email" id="registerEmail" class="auth-input" placeholder="Email" required />
+          <input type="password" id="registerPassword" class="auth-input" placeholder="Password (min 8 chars)" required />
+          <input type="password" id="registerPassword2" class="auth-input" placeholder="Confirm Password" required />
+          <button type="submit" class="auth-btn">Create Account</button>
+        </form>
+        <p class="auth-toggle">Already have an account? <a href="#" id="toggleLogin">Sign in</a></p>
+        <div id="registerError" class="auth-error"></div>
+      </div>
+    </div>
+  </div>
+
   <button id="menuToggle" class="menu-toggle">☰</button>
   <div class="sidebar-overlay"></div>
 
-  <div id="app">
+  <div id="app" class="hidden">
     <!-- Sidebar -->
     <nav class="sidebar">
       <div class="sidebar-header">
@@ -50,6 +100,10 @@
       </ul>
       <div class="sidebar-footer">
         <div class="session-count" id="sidebarStats"></div>
+        <div class="user-info">
+          <div class="user-name" id="userName">Player</div>
+          <button id="logoutBtn" class="logout-btn">Sign Out</button>
+        </div>
       </div>
     </nav>
 
@@ -293,6 +347,12 @@
     </div>
   </div>
 
+  <script src="supabase-client.js"></script>
+  <script src="auth.js"></script>
+  <script src="import-data.js"></script>
   <script src="app.js"></script>
+  <script>
+    initAuth();
+  </script>
 </body>
 </html>

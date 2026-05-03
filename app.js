@@ -1244,5 +1244,7 @@ function exportCSV() {
 document.getElementById('exportBtn').addEventListener('click', exportCSV);
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
-renderDashboard();
-renderSidebarStats();
+function initializeMainApp() {
+  renderDashboard();
+  renderSidebarStats();
+}
