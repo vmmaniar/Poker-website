@@ -658,6 +658,7 @@ body {
 .btn-danger:hover { background: #b03530; }
 
 .btn-full { width: 100%; justify-content: center; }
+.btn-sm { padding: 0.35rem 0.85rem; font-size: 0.8rem; }
 
 /* ─── Live Session Buttons ─── */
 .btn-rebuy {
@@ -726,6 +727,75 @@ body {
 }
 .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 0.65rem; }
 .empty-state p { font-size: 0.875rem; }
+
+/* ─── Onboarding Card ─── */
+.onboarding-card {
+  grid-column: 1 / -1;
+  background: #fff;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 2rem 1.75rem;
+  max-width: 520px;
+}
+.onboarding-title {
+  font-family: var(--script);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 0.35rem;
+}
+.onboarding-sub {
+  color: var(--ink-faint);
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
+}
+.onboarding-sub .player-dot-inline {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.onboarding-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.onboarding-step {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--paper);
+  border: 1.5px solid var(--paper-2);
+  border-radius: var(--radius-sm);
+}
+.step-num {
+  width: 28px;
+  height: 28px;
+  background: var(--felt);
+  color: var(--paper-3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--script);
+  font-size: 1rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.step-body { flex: 1; }
+.step-label { font-size: 0.9rem; font-weight: 600; color: var(--ink); }
+.step-hint { font-size: 0.78rem; color: var(--ink-faint); margin-top: 1px; }
+.onboarding-ready .onboarding-steps { display: none; }
+.onboarding-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
 
 /* ─── Toast ─── */
 .toast {

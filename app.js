@@ -45,6 +45,16 @@ document.getElementById('quickLogBtn').addEventListener('click', () => {
   document.querySelector('[data-page="session"]').click();
 });
 
+function navigateTo(page) {
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  const link = document.querySelector(`.nav-link[data-page="${page}"]`);
+  if (link) link.classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (activeTimer) { clearInterval(activeTimer); activeTimer = null; }
+  renderPage(page);
+}
+
 function renderPage(page) {
   if (page === 'dashboard') renderDashboard();
   else if (page === 'session') renderSessionForm();
@@ -219,7 +229,7 @@ function renderActiveBanner() {
 }
 
 function openStartSessionModal() {
-  if (!state.players.length) { toast('Add players first'); return; }
+  if (!state.players.length) { toast('Add players first'); navigateTo('players'); return; }
   document.getElementById('liveSessionDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('liveSessionNotes').value = '';
 
@@ -420,9 +430,9 @@ document.getElementById('endSessionSave').addEventListener('click', () => {
 
   if (activeTimer) { clearInterval(activeTimer); activeTimer = null; }
   document.getElementById('endSessionModal').classList.add('hidden');
-  renderDashboard();
   renderSidebarStats();
   toast('Session saved! ♠');
+  navigateTo('dashboard');
 });
 
 document.getElementById('discardSessionBtn').addEventListener('click', async () => {
@@ -450,8 +460,49 @@ function renderDashboard() {
 
 function renderStatCards() {
   const grid = document.getElementById('statGrid');
+  if (!state.players.length) {
+    grid.innerHTML = `
+      <div class="onboarding-card">
+        <div class="onboarding-title">Welcome to High Roller Club ♠</div>
+        <p class="onboarding-sub">Three steps to get started:</p>
+        <div class="onboarding-steps">
+          <div class="onboarding-step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-label">Add your players</div>
+              <div class="step-hint">Anyone who sits at the table</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="navigateTo('players')">Add Players →</button>
+          </div>
+          <div class="onboarding-step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-label">Start or log a session</div>
+              <div class="step-hint">Live tracking or manually enter results</div>
+            </div>
+          </div>
+          <div class="onboarding-step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-label">Watch the stats roll in</div>
+              <div class="step-hint">Leaderboard, P&L charts, head-to-head</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
   if (!state.sessions.length) {
-    grid.innerHTML = '';
+    grid.innerHTML = `
+      <div class="onboarding-card onboarding-ready">
+        <div class="onboarding-title">Players ready — time to play ♠</div>
+        <p class="onboarding-sub">${state.players.map(p => `<span class="player-dot-inline" style="background:${p.color}"></span>${p.name}`).join('  ')}</p>
+        <div class="onboarding-actions">
+          <button class="btn btn-primary" id="onboardLiveBtn">⏱ Start Live Session</button>
+          <button class="btn btn-secondary" onclick="navigateTo('session')">+ Log Past Session</button>
+        </div>
+      </div>`;
+    document.getElementById('onboardLiveBtn')?.addEventListener('click', openStartSessionModal);
     return;
   }
 
@@ -1009,7 +1060,10 @@ function renderSessionForm() {
 
   const list = document.getElementById('sessionResults');
   if (!state.players.length) {
-    list.innerHTML = '<div class="empty-state"><p>No players added yet. Go to Players to add some first.</p></div>';
+    list.innerHTML = `<div class="empty-state">
+      <p>No players yet — add them first.</p>
+      <button class="btn btn-primary btn-sm" style="margin-top:0.75rem" onclick="navigateTo('players')">Add Players →</button>
+    </div>`;
     document.getElementById('balanceRow').innerHTML = '';
     return;
   }
@@ -1082,9 +1136,9 @@ document.getElementById('saveSessionBtn').addEventListener('click', () => {
 
   state.sessions.push(session);
   save();
-  toast('Session saved!');
-  renderSessionForm();
+  toast('Session saved! ♠');
   renderSidebarStats();
+  navigateTo('dashboard');
 });
 
 // ─── Players Page ─────────────────────────────────────────────────────────────
