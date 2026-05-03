@@ -2,8 +2,8 @@
 // Create a Supabase client - you'll need to replace these with your actual credentials
 // Get these from: https://app.supabase.com -> Settings -> API
 
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://gmrpnqexjdqcgdszzqwj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_SrVQCMXgcEeSBVfij6SCCA_s-oZ_exy';
 
 let supabase = null;
 let currentUser = null;
