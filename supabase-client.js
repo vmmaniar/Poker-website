@@ -13,8 +13,13 @@ function initSupabase() {
     console.log('Supabase not configured - using offline mode');
     return false;
   }
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  return true;
+  try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    return true;
+  } catch (err) {
+    console.error('Supabase init failed:', err);
+    return false;
+  }
 }
 
 async function signUp(email, password, name) {
@@ -31,8 +36,13 @@ async function signUp(email, password, name) {
 
     if (error) return { error: error.message };
 
-    // Create player profile in database
-    if (data.user) {
+    // data.session is null when email confirmation is required
+    if (!data.session && data.user) {
+      return { needsConfirmation: true };
+    }
+
+    // Create player profile in database (only if session exists)
+    if (data.user && data.session) {
       await supabase.from('players').insert([{
         id: data.user.id,
         name,

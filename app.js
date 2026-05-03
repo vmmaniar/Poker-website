@@ -1,4 +1,4 @@
-// ─── State ───────────────────────────────────────────────────────────────────
+﻿// ─── State ───────────────────────────────────────────────────────────────────
 const COLORS = [
   '#f0b90b','#22c55e','#3b82f6','#a855f7','#ef4444',
   '#f97316','#06b6d4','#ec4899','#84cc16','#8b5cf6'
@@ -34,8 +34,8 @@ document.querySelectorAll('.nav-link').forEach(link => {
     link.classList.add('active');
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + page).classList.add('active');
-    document.querySelector('.sidebar').classList.remove('open');
-    document.querySelector('.sidebar-overlay').classList.remove('active');
+    document.querySelector('.sidebar')?.classList.remove('open');
+    document.querySelector('.sidebar-overlay')?.classList.remove('active');
     if (activeTimer) { clearInterval(activeTimer); activeTimer = null; }
     renderPage(page);
   });
@@ -157,15 +157,15 @@ function renderSidebarStats() {
   `;
 }
 
-// ─── Mobile Menu ──────────────────────────────────────────────────────────────
-document.getElementById('menuToggle').addEventListener('click', () => {
-  document.querySelector('.sidebar').classList.toggle('open');
-  document.querySelector('.sidebar-overlay').classList.toggle('active');
+// ─── Mobile Menu (sidebar hidden in new design, kept for compatibility) ───────
+const _menuToggle = document.getElementById('menuToggle');
+if (_menuToggle) _menuToggle.addEventListener('click', () => {
+  document.querySelector('.sidebar')?.classList.toggle('open');
+  document.querySelector('.sidebar-overlay')?.classList.toggle('active');
 });
-
-document.querySelector('.sidebar-overlay').addEventListener('click', () => {
-  document.querySelector('.sidebar').classList.remove('open');
-  document.querySelector('.sidebar-overlay').classList.remove('active');
+document.querySelector('.sidebar-overlay')?.addEventListener('click', () => {
+  document.querySelector('.sidebar')?.classList.remove('open');
+  document.querySelector('.sidebar-overlay')?.classList.remove('active');
 });
 
 // ─── Active Session ───────────────────────────────────────────────────────────
@@ -585,14 +585,14 @@ function renderPnlChart() {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: {
-          labels: { color: 'rgba(249,250,251,0.45)', font: { size: 11 }, boxWidth: 12 }
+          labels: { color: 'rgba(26,26,26,0.5)', font: { size: 11 }, boxWidth: 12 }
         },
         tooltip: {
-          backgroundColor: '#242424',
-          borderColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: '#fdfaef',
+          borderColor: 'rgba(0,0,0,0.12)',
           borderWidth: 1,
-          titleColor: '#F9FAFB',
-          bodyColor: 'rgba(249,250,251,0.6)',
+          titleColor: '#1a1a1a',
+          bodyColor: 'rgba(26,26,26,0.6)',
           callbacks: {
             label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}`
           }
@@ -600,12 +600,12 @@ function renderPnlChart() {
       },
       scales: {
         x: {
-          ticks: { color: 'rgba(249,250,251,0.25)', font: { size: 10 }, maxTicksLimit: 8 },
-          grid: { color: 'rgba(255,255,255,0.04)' }
+          ticks: { color: 'rgba(26,26,26,0.4)', font: { size: 10 }, maxTicksLimit: 8 },
+          grid: { color: 'rgba(0,0,0,0.07)' }
         },
         y: {
-          ticks: { color: 'rgba(249,250,251,0.25)', font: { size: 10 }, callback: v => '$' + v },
-          grid: { color: 'rgba(255,255,255,0.04)' }
+          ticks: { color: 'rgba(26,26,26,0.4)', font: { size: 10 }, callback: v => '$' + v },
+          grid: { color: 'rgba(0,0,0,0.07)' }
         }
       }
     }
@@ -656,21 +656,21 @@ function renderMonthlyChart() {
       responsive: true,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { labels: { color: 'rgba(249,250,251,0.45)', font: { size: 11 }, boxWidth: 12 } },
+        legend: { labels: { color: 'rgba(26,26,26,0.5)', font: { size: 11 }, boxWidth: 12 } },
         tooltip: {
-          backgroundColor: '#242424',
-          borderColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: '#fdfaef',
+          borderColor: 'rgba(0,0,0,0.12)',
           borderWidth: 1,
-          titleColor: '#F9FAFB',
-          bodyColor: 'rgba(249,250,251,0.6)',
+          titleColor: '#1a1a1a',
+          bodyColor: 'rgba(26,26,26,0.6)',
           callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` }
         }
       },
       scales: {
-        x: { ticks: { color: 'rgba(249,250,251,0.25)', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        x: { ticks: { color: 'rgba(26,26,26,0.4)', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.07)' } },
         y: {
-          ticks: { color: 'rgba(249,250,251,0.25)', font: { size: 10 }, callback: v => '$' + v },
-          grid: { color: 'rgba(255,255,255,0.04)' }
+          ticks: { color: 'rgba(26,26,26,0.4)', font: { size: 10 }, callback: v => '$' + v },
+          grid: { color: 'rgba(0,0,0,0.07)' }
         }
       }
     }
@@ -725,22 +725,22 @@ function renderWinRateChart() {
       responsive: true,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { labels: { color: 'rgba(249,250,251,0.45)', font: { size: 11 }, boxWidth: 12 } },
+        legend: { labels: { color: 'rgba(26,26,26,0.5)', font: { size: 11 }, boxWidth: 12 } },
         tooltip: {
-          backgroundColor: '#242424',
-          borderColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: '#fdfaef',
+          borderColor: 'rgba(0,0,0,0.12)',
           borderWidth: 1,
-          titleColor: '#F9FAFB',
-          bodyColor: 'rgba(249,250,251,0.6)',
+          titleColor: '#1a1a1a',
+          bodyColor: 'rgba(26,26,26,0.6)',
           callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}%` }
         }
       },
       scales: {
-        x: { ticks: { color: 'rgba(249,250,251,0.25)', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        x: { ticks: { color: 'rgba(26,26,26,0.4)', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.07)' } },
         y: {
           min: 0, max: 100,
-          ticks: { color: 'rgba(249,250,251,0.25)', font: { size: 10 }, callback: v => v + '%' },
-          grid: { color: 'rgba(255,255,255,0.04)' }
+          ticks: { color: 'rgba(26,26,26,0.4)', font: { size: 10 }, callback: v => v + '%' },
+          grid: { color: 'rgba(0,0,0,0.07)' }
         }
       }
     }
@@ -969,17 +969,17 @@ function showProfile(playerId) {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#242424',
-            borderColor: 'rgba(255,255,255,0.1)',
+            backgroundColor: '#fdfaef',
+            borderColor: 'rgba(0,0,0,0.12)',
             borderWidth: 1,
-            titleColor: '#F9FAFB',
-            bodyColor: 'rgba(249,250,251,0.6)',
+            titleColor: '#1a1a1a',
+            bodyColor: 'rgba(26,26,26,0.6)',
             callbacks: { label: ctx => ` P&L: ${fmt(ctx.parsed.y)}` }
           }
         },
         scales: {
-          x: { ticks: { color: 'rgba(249,250,251,0.25)', font: { size: 9 }, maxTicksLimit: 6 }, grid: { color: 'rgba(255,255,255,0.04)' } },
-          y: { ticks: { color: 'rgba(249,250,251,0.25)', font: { size: 9 }, callback: v => '$' + v }, grid: { color: 'rgba(255,255,255,0.04)' } }
+          x: { ticks: { color: 'rgba(26,26,26,0.4)', font: { size: 9 }, maxTicksLimit: 6 }, grid: { color: 'rgba(0,0,0,0.07)' } },
+          y: { ticks: { color: 'rgba(26,26,26,0.4)', font: { size: 9 }, callback: v => '$' + v }, grid: { color: 'rgba(0,0,0,0.07)' } }
         }
       }
     });
@@ -1248,3 +1248,4 @@ function initializeMainApp() {
   renderDashboard();
   renderSidebarStats();
 }
+

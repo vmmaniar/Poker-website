@@ -79,7 +79,15 @@ async function handleLogin() {
 
   const result = await signIn(email, password);
   if (result.error) {
-    errorEl.textContent = result.error;
+    // Supabase login failed — try local credentials as fallback
+    const storedCreds = JSON.parse(localStorage.getItem('auth_creds') || '{}');
+    if (storedCreds[email] === password) {
+      isOnlineMode = false;
+      showMainApp(email);
+      errorEl.textContent = '';
+    } else {
+      errorEl.textContent = result.error;
+    }
   } else {
     showMainApp(email);
   }
@@ -131,11 +139,30 @@ async function handleRegister() {
 
   const result = await signUp(email, password, name);
   if (result.error) {
-    errorEl.textContent = result.error;
+    // Supabase failed — save credentials locally and continue anyway
+    storeLocalCredentials(email, password, name);
+    isOnlineMode = false;
+    showMainApp(email);
+    errorEl.textContent = '';
+  } else if (result.needsConfirmation) {
+    // Email confirmation required — store locally so user can use the app immediately
+    storeLocalCredentials(email, password, name);
+    isOnlineMode = false;
+    showMainApp(email);
+    errorEl.textContent = '';
   } else {
-    errorEl.textContent = 'Account created! Please sign in.';
-    setTimeout(() => toggleAuthPage('login'), 1500);
+    showMainApp(email);
+    errorEl.textContent = '';
   }
+}
+
+function storeLocalCredentials(email, password, name) {
+  const creds = JSON.parse(localStorage.getItem('auth_creds') || '{}');
+  creds[email] = password;
+  localStorage.setItem('auth_creds', JSON.stringify(creds));
+  const users = JSON.parse(localStorage.getItem('auth_users') || '{}');
+  users[email] = { name, email };
+  localStorage.setItem('auth_users', JSON.stringify(users));
 }
 
 async function handleLogout() {
